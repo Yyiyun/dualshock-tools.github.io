@@ -347,9 +347,9 @@ async function ds4_calibrate_sticks() {
         }
     
         set_progress(10);
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 50));
     
-        for(var i=0;i<3;i++) {
+        for(var i=0;i<5;i++) { // increased sampling speed
             // Sample
             await device.sendFeatureReport(0x90, alloc_req(0x90, [3,1,1]))
     
@@ -364,8 +364,8 @@ async function ds4_calibrate_sticks() {
                 return show_popup(err + l("Error 2") + " (" + d1 + ", " + d2 + " at i=" + i + ")");
             }
     
-            await new Promise(r => setTimeout(r, 500));
-            set_progress(20 + i * 30);
+            await new Promise(r => setTimeout(r, 50));
+            set_progress(20 + i * 16); // faster progress update
         }
     
         // Write
@@ -379,7 +379,7 @@ async function ds4_calibrate_sticks() {
         }
     
         set_progress(100);
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 100));
         close_calibrate_window()
         show_popup(l("Stick calibration completed"));
     } catch(e) {
@@ -634,9 +634,9 @@ async function ds5_calibrate_sticks() {
     
         set_progress(10);
     
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 50));
     
-        for(var i=0;i<3;i++) {
+        for(var i=0;i<5;i++) { // increased sampling speed
             // Sample
             await device.sendFeatureReport(0x82, alloc_req(0x82, [3,1,1]))
     
@@ -649,11 +649,11 @@ async function ds5_calibrate_sticks() {
                 return show_popup(err + l("Error 2") + " (" + d1 + ").");
             }
     
-            await new Promise(r => setTimeout(r, 500));
-            set_progress(20 + i * 20);
+            await new Promise(r => setTimeout(r, 50));
+            set_progress(20 + i * 16); // faster progress update
         }
     
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 100));
         set_progress(80);
     
         // Write
@@ -669,7 +669,7 @@ async function ds5_calibrate_sticks() {
     
         set_progress(100);
         
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 100));
         close_calibrate_window()
     
         show_popup(l("Stick calibration completed"));
@@ -1112,7 +1112,7 @@ function refresh_sticks() {
 
     refresh_stick_pos();
     on_delay = true;
-    setTimeout(timeout_ok, 20);
+    setTimeout(timeout_ok, 10); // Reduced delay for faster updates
 }
 
 function process_ds4_input(data) {
@@ -1618,89 +1618,60 @@ function lang_init() {
     var olangs = "";
     olangs += '<li><a class="dropdown-item" href="#" onclick="lang_set(\'en_us\');">English</a></li>';
     for(i=0;i<langs.length;i++) {
-        name = available_langs[langs[i]]["name"];
-        olangs += '<li><a class="dropdown-item" href="#" onclick="lang_set(\'' + langs[i] + '\');">' + name + '</a></li>';
+        l = langs[i];
+        olangs += '<li><a class="dropdown-item" href="#" onclick="lang_set(\'' + l + '\');">' + available_langs[l]["name"] + '</a></li>';
     }
-    olangs += '<li><hr class="dropdown-divider"></li>';
-    olangs += '<li><a class="dropdown-item" href="https://github.com/dualshock-tools/dualshock-tools.github.io/blob/main/TRANSLATIONS.md" target="_blank">Missing your language?</a></li>';
-    $("#availLangs").html(olangs);
-
+    $("#langs").html(olangs);
 }
 
-function lang_set(l, skip_modal=false) {
-    la("lang_set", {"l": l})
-    if(l == "en_us") {
-        lang_reset_page();
-    } else {
-        var file = available_langs[l]["file"];
-        lang_translate(file, l);
-    }
-
-    createCookie("force_lang", l);
-    if(!skip_modal) {
-        createCookie("welcome_accepted", "0");
-        welcome_modal();
-    }
+function lang_set(nlang, force=false) {
+    la("lang_set", {"l": nlang});
+    var ljson = available_langs[nlang];
+    if(ljson === undefined)
+        return;
+    lang_translate(ljson["file"], nlang, force);
 }
 
-function lang_reset_page() {
-    var items = document.getElementsByClassName('ds-i18n');
-    for(i=0; i<items.length; i++) { 
-        var item = items[i];
-        $(item).html(lang_orig_text[item.id]);
-    }
-    $("#authorMsg").html("");
-    $("#curLang").html("English");
-    document.title = lang_orig_text[".title"];
-}
+function lang_translate(lfile, nlang, force=false) {
+    var default_lang = lang_disabled;
+    if(nlang != "en_us")
+        lang_disabled = false;
+    else if(nlang == "en_us" && force)
+        lang_disabled = false;
 
-function l(text) {
-    if(lang_disabled)
-        return text;
-    
-    var out = lang_cur[text];
-    if(out !== undefined) {
-        return out;
-    }
-
-    console.log("Missing translation for: '" + text + "'");
-    return text;
-}
-
-function lang_translate(target_file, target_lang) {
-    lang_cur = {}
-    $.getJSON("lang/" + target_file, function(data) {
-        $.each( data, function( key, val ) {
-             if(lang_cur[key] !== undefined) {
-                 console.log("Warn: already exists " + key);
-             } else { 
-                 lang_cur[key] = [val];
-             }
-        });
-
-        if(Object.keys(lang_cur).length > 0) {
-            lang_disabled = false;
-        }
-
-        var items = document.getElementsByClassName('ds-i18n');
-        for(i=0; i<items.length; i++) { 
-            var item = items[i];
-            var old = lang_orig_text[item.id];
-
-            var tnew = lang_cur[old];
-            if (tnew !== undefined && tnew.length == 1 && tnew[0].length > 0) {
-                $(item).html(tnew[0]);
-            } else {
-                console.log("Cannot find mapping for " + old); 
-                $(item).html(old);
-            }
-        }
-        var old_title = lang_orig_text[".title"];
-        document.title = lang_cur[old_title];
-        if(lang_cur[".authorMsg"] !== undefined) {
-            $("#authorMsg").html(lang_cur[".authorMsg"]);
-        }
-        $("#curLang").html(available_langs[target_lang]["name"]);
+    $.getJSON("assets/lang/" + lfile, function(j){
+        lang_cur = j;
+        lang_apply();
+        createCookie("force_lang", nlang, 365);
+        if(force)
+            show_popup(l("Your language preference has been saved."));
+    }).fail(function() {
+        if(force)
+            show_popup(l("There was an error while fetching the language pack."));
     });
-
 }
+
+function l(ident) {
+    if(lang_disabled)
+        return ident;
+    var t = lang_cur[ident];
+    if(t === undefined)
+        return "!" + ident + "!";
+    return t;
+}
+
+function lang_apply() {
+    for (var ident in lang_orig_text) {
+        if (lang_orig_text.hasOwnProperty(ident)) {
+            var orig = lang_orig_text[ident];
+            var t = lang_cur[orig];
+            if(t === undefined)
+                continue;
+            if(ident == ".title")
+                document.title = t;
+            else
+                $("#" + ident).html(t);
+        }
+    }
+}
+
