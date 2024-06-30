@@ -1093,7 +1093,6 @@ function on_circ_check_change() {
 }
 
 function float_to_str(f) {
-    if(f < 0.000004 && f >= -0.000004) return "+0.00000";
     return (f<0?"":"+") + f.toFixed(5);
 }
 
@@ -1135,16 +1134,37 @@ function process_ds4_input(data) {
     }
 }
 
+function process_ds4_input(data) {
+    var lx = data.data.getUint8(0);
+    var ly = data.data.getUint8(1);
+    var rx = data.data.getUint8(2);
+    var ry = data.data.getUint8(3);
+
+    var new_lx = (lx - 127.5) / 128;
+    var new_ly = (ly - 127.5) / 128;
+    var new_rx = (rx - 127.5) / 128;
+    var new_ry = (ry - 127.5) / 128;
+
+    if(last_lx != new_lx || last_ly != new_ly || last_rx != new_rx || last_ry != new_ry) {
+        last_lx = new_lx;
+        last_ly = new_ly;
+        last_rx = new_rx;
+        last_ry = new_ry;
+        ll_updated = true;
+        refresh_sticks();
+    }
+}
+
 function process_ds_input(data) {
     var lx = data.data.getUint8(0);
     var ly = data.data.getUint8(1);
     var rx = data.data.getUint8(2);
     var ry = data.data.getUint8(3);
 
-    var new_lx = Math.round((lx - 127.5) / 128 * 100) / 100;
-    var new_ly = Math.round((ly - 127.5) / 128 * 100) / 100;
-    var new_rx = Math.round((rx - 127.5) / 128 * 100) / 100;
-    var new_ry = Math.round((ry - 127.5) / 128 * 100) / 100;
+    var new_lx = (lx - 127.5) / 128;
+    var new_ly = (ly - 127.5) / 128;
+    var new_rx = (rx - 127.5) / 128;
+    var new_ry = (ry - 127.5) / 128;
 
     if(last_lx != new_lx || last_ly != new_ly || last_rx != new_rx || last_ry != new_ry) {
         last_lx = new_lx;
