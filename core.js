@@ -1093,8 +1093,8 @@ function on_circ_check_change() {
 }
 
 function float_to_str(f) {
-    if(f < 0.004 && f >= -0.004) return "+0.00";
-    return (f<0?"":"+") + f.toFixed(2);
+    if(f < 0.000004 && f >= -0.000004) return "+0.00000";
+    return (f<0?"":"+") + f.toFixed(5);
 }
 
 var on_delay = false;
