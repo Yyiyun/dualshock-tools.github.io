@@ -1093,7 +1093,9 @@ function on_circ_check_change() {
 }
 
 function float_to_str(f) {
-    return (f<0?"":"+") + f.toFixed(5);
+    // 四舍五入到第五位小数
+    f = Math.round(f * 1000000) / 1000000;
+    return (f < 0 ? "" : "+") + f.toFixed(5);
 }
 
 var on_delay = false;
