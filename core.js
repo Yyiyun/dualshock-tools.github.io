@@ -1112,7 +1112,7 @@ function refresh_sticks() {
 
     refresh_stick_pos();
     on_delay = true;
-    setTimeout(timeout_ok, 20);
+    setTimeout(timeout_ok, 5);
 }
 
 function process_ds4_input(data) {
